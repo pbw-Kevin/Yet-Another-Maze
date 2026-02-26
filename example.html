@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yet Another Maze Puzzle - Example</title>
+</head>
+<body>
+    <div class="puz-container">
+        <link rel="stylesheet" href="https://unpkg.com/element-plus@2.13.2/dist/index.css">
+        <style>
+            .puz-container {
+                max-width: 500px;
+                padding: 10px;
+                border: 2px solid black;
+            }
+            .puz-win-info {
+                font-size: 24px;
+                color: green;
+            }
+            .puz-history-container {
+                height: 150px;
+                overflow-y: auto;
+            }
+            .puz-actions-container {
+                height: 100px;
+            }
+            .puz-prev-action-tag {
+                margin: 0 5px;
+            }
+            .el-button {
+                margin: 5px;
+            }
+        </style>
+        <h1>Yet Another Maze Puzzle - Example</h1>
+        <div id="puz-loading">
+            <p>Loading resources. It may take up to several minutes.</p>
+        </div>
+        <div id="puz-app" style="display: none">
+            <p class="puz-win-info" v-if="win">Congratulations! You've solved the maze!</p>
+            <el-container class="puz-panel" v-if="!win">
+                <el-main class="puz-history-container">
+                    <span v-for="(entry, index) in history" :key="index">
+                        {{ index + 1 }}. Action: {{ entry.action }}, Result: 
+                        <span v-if="entry.result" style="color: red">Failed</span>
+                        <span v-else style="color: green">Success</span><br />
+                    </span>
+                    <span>-------- LATEST --------</span>
+                </el-main>
+                <el-footer class="puz-actions-container">
+                    <el-button @click="step(4)">Go to Start</el-button>
+                    <el-button-group>
+                        <el-button v-for="(dir, index) in ['Up', 'Left', 'Down', 'Right']" :key="index" :disabled="directionFailed[index]" @click="step(index)" type="primary">
+                            {{ dir }}
+                        </el-button>
+                    </el-button-group>
+                </el-footer>
+            </el-container>
+        </div>
+        <script src="https://unpkg.com/vue@3.5.29/dist/vue.global.prod.js"></script>
+        <script src="https://unpkg.com/element-plus@2.13.2/dist/index.full.js"></script>
+        <script>
+            const App = {
+                data() {
+                    Vue.onMounted(() => {
+                        document.getElementById("puz-loading").style.display = "none";
+                        document.getElementById("puz-app").style.display = "block";
+                    });
+                    const history = Vue.ref([]);
+                    const win = Vue.ref(false);
+                    const Width = 4, Height = 5;
+                    const Directions = [
+                        { x: -1, y: 0 }, // up
+                        { x: 0, y: -1 }, // left
+                        { x: 1, y: 0 },  // down
+                        { x: 0, y: 1 },  // right
+                    ]
+                    const Maze = [
+                        [4, 4, 32, 0],
+                        [3, 9, 10, 2],
+                        [10, 10, 10, 2],
+                        [14, 6, 12, 2],
+                        [1, 1, 1, 1],
+                    ]
+                    const directionFailed = Vue.ref([false, false, false, false]);
+                    var current = { x: 3, y: 0 };
+                    function stepRes(dir, res) {
+                        if (!res) {
+                            directionFailed.value = [false, false, false, false];
+                        }
+                        else if (dir >= 0 && dir <= 3) {
+                            if (directionFailed.value[dir]) return;
+                            directionFailed.value[dir] = true;
+                        }
+                        history.value.push({ action: ["Up", "Left", "Down", "Right", "Unknown"][dir], result: res });
+                        const container = document.querySelector(".puz-history-container");
+                        container.scrollTop = container.scrollHeight;
+                    }
+                    function step(dir) {
+                        if (dir === 4) {
+                            current = { x: 3, y: 0 };
+                            history.value = [];
+                            directionFailed.value = [false, false, false, false];
+                            return;
+                        }
+                        if (dir < 0 || dir > 3){
+                            stepRes(4, 1);
+                            return;
+                        }
+                        if (Maze[current.x][current.y] & (1 << dir)){
+                            stepRes(dir, 1);
+                            return;
+                        }
+                        current.x += Directions[dir].x;
+                        current.y += Directions[dir].y;
+                        if (Maze[current.x][current.y] & 32) {
+                            win.value = true;
+                            return;
+                        }
+                        stepRes(dir, 0);
+                    }
+                    return {
+                        history,
+                        win,
+                        directionFailed,
+                        step,
+                    };
+                },
+            };
+            const app = Vue.createApp(App);
+            app.use(ElementPlus);
+            app.mount("#puz-app");
+        </script>
+    </div>
+</body>
+</html>
